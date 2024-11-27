@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>寝室轮流倒垃圾程序</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        #result, #nextDuty {
+            font-size: 24px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>寝室轮流倒垃圾程序</h1>
+    <div id="result"></div>
+    <div id="nextDuty"></div>
+
+    <script>
+        // 定义假期日期范围，例如：2024-01-01至2024-02-01
+        const holidays = [
+            { start: '2024-01-01', end: '2024-02-01' }
+        ];
+
+        // 寝室成员名单
+        const members = ['黄鹏文', '徐鑫鹏', '王金涛', '黄孝傲','冉墙林','黄永鑫'];
+
+        // 设置开始轮流倒垃圾的日期，格式为YYYY-MM-DD
+        const startDate = '2024-10-27';
+
+        function isHoliday(date) {
+            for (let i = 0; i < holidays.length; i++) {
+                const holiday = holidays[i];
+                if (date >= holiday.start && date <= holiday.end) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function getDutyMember(date) {
+            const start = new Date(startDate);
+            const end = new Date(date);
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); // 总天数
+            const index = (diffDays - 1) % members.length;
+            return members[index];
+        }
+
+        function getDutyMemberToday() {
+            const today = new Date().toISOString().slice(0, 10);
+            if (isHoliday(today)) {
+                return '今天放假，不用倒垃圾';
+            } else {
+                return `今天轮到 ${getDutyMember(today)} 倒垃圾`;
+            }
+        }
+
+        function getNextDutyMember() {
+            const tomorrow = new Date(new Date().getTime() + (1000 * 60 * 60 * 24));
+            const tomorrowISO = tomorrow.toISOString().slice(0, 10);
+            if (isHoliday(tomorrowISO)) {
+                return '明天放假，不用倒垃圾';
+            } else {
+                return `明天轮到 ${getDutyMember(tomorrowISO)} 倒垃圾`;
+            }
+        }
+
+        document.getElementById('result').innerText = getDutyMemberToday();
+        document.getElementById('nextDuty').innerText = getNextDutyMember();
+    </script>
+</body>
+</html>
