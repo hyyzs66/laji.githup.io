@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>寝室倒垃圾管理系统 - 管理员页面</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .section h2 {
+            margin-top: 0;
+            color: #555;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .notification {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .pending {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .form-group {
+            margin: 10px 0;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: white;
+        }
+        .btn-approve {
+            background-color: #27ae60;
+        }
+        .btn-reject {
+            background-color: #e74c3c;
+        }
+        .btn-primary {
+            background-color: #3498db;
+        }
+        .btn-secondary {
+            background-color: #95a5a6;
+        }
+        .hidden {
+            display: none;
+        }
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .back-link a {
+            color: #3498db;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>寝室倒垃圾管理系统 - 管理员页面</h1>
+        
+        <!-- 待处理的交换申请 -->
+        <div class="section">
+            <h2>交换申请管理</h2>
+            <table id="requestsTable">
+                <thead>
+                    <tr>
+                        <th>申请人</th>
+                        <th>交换对象</th>
+                        <th>交换日期</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="requestsBody">
+                    <!-- 数据将通过JavaScript填充 -->
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 设置休假日期 -->
+        <div class="section">
+            <h2>设置休假日期</h2>
+            <div class="form-group">
+                <label for="holidayStart">开始日期</label>
+                <input type="date" id="holidayStart">
+            </div>
+            <div class="form-group">
+                <label for="holidayEnd">结束日期</label>
+                <input type="date" id="holidayEnd">
+            </div>
+            <div class="button-group">
+                <button id="addHoliday" class="btn-primary">添加休假日期</button>
+            </div>
+            <div id="holidayResult" class="notification hidden"></div>
+        </div>
+        
+        <!-- 倒垃圾次数统计 -->
+        <div class="section">
+            <h2>倒垃圾次数统计</h2>
+            <table id="statsTable">
+                <thead>
+                    <tr>
+                        <th>成员</th>
+                        <th>倒垃圾次数</th>
+                    </tr>
+                </thead>
+                <tbody id="statsBody">
+                    <!-- 数据将通过JavaScript填充 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="back-link">
+        <a href="index.html">返回用户页面</a>
+    </div>
+
+    <script>
+        // 模拟数据
+        const members = ['黄鹏文', '徐鑫鹏', '王金涛', '黄孝傲', '冉墙林', '黄永鑫'];
+        
+        // 模拟交换申请
+        let swapRequests = [
+            { id: 1, from: '黄鹏文', to: '徐鑫鹏', date: '2024-05-20', status: 'pending' },
+            { id: 2, from: '王金涛', to: '黄孝傲', date: '2024-05-22', status: 'pending' }
+        ];
+        
+        // 模拟倒垃圾次数统计
+        let dutyStats = {
+            '黄鹏文': 8,
+            '徐鑫鹏': 7,
+            '王金涛': 8,
+            '黄孝傲': 7,
+            '冉墙林': 8,
+            '黄永鑫': 7
+        };
+        
+        // 模拟假期
+        let holidays = [
+            { start: '2024-01-01', end: '2024-02-01' },
+            { start: '2024-05-01', end: '2024-05-03' }
+        ];
+        
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            updateRequestsTable();
+            updateStatsTable();
+            
+            // 绑定事件
+            document.getElementById('addHoliday').addEventListener('click', addHoliday);
+        });
+        
+        // 更新申请表格
+        function updateRequestsTable() {
+            const requestsBody = document.getElementById('requestsBody');
+            requestsBody.innerHTML = '';
+            
+            swapRequests.forEach(request => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${request.from}</td>
+                    <td>${request.to}</td>
+                    <td>${formatDate(request.date)}</td>
+                    <td>${getStatusText(request.status)}</td>
+                    <td>
+                        ${request.status === 'pending' ? 
+                            `<div class="button-group">
+                                <button class="btn-approve" onclick="approveRequest(${request.id})">同意</button>
+                                <button class="btn-reject" onclick="rejectRequest(${request.id})">拒绝</button>
+                            </div>` : 
+                            '无操作'}
+                    </td>
+                `;
+                requestsBody.appendChild(row);
+            });
+        }
+        
+        // 更新统计表格
+        function updateStatsTable() {
+            const statsBody = document.getElementById('statsBody');
+            statsBody.innerHTML = '';
+            
+            members.forEach(member => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${member}</td>
+                    <td>${dutyStats[member] || 0}</td>
+                `;
+                statsBody.appendChild(row);
+            });
+        }
+        
+        // 同意交换申请
+        function approveRequest(id) {
+            const request = swapRequests.find(req => req.id === id);
+            if (request) {
+                request.status = 'approved';
+                
+                // 更新统计信息
+                if (dutyStats[request.from] !== undefined) {
+                    dutyStats[request.from]++;
+                } else {
+                    dutyStats[request.from] = 1;
+                }
+                
+                updateRequestsTable();
+                updateStatsTable();
+                alert(`已同意${request.from}和${request.to}在${formatDate(request.date)}的交换申请`);
+            }
+        }
+        
+        // 拒绝交换申请
+        function rejectRequest(id) {
+            const request = swapRequests.find(req => req.id === id);
+            if (request) {
+                request.status = 'rejected';
+                updateRequestsTable();
+                alert(`已拒绝${request.from}和${request.to}在${formatDate(request.date)}的交换申请`);
+            }
+        }
+        
+        // 添加休假日期
+        function addHoliday() {
+            const startDate = document.getElementById('holidayStart').value;
+            const endDate = document.getElementById('holidayEnd').value;
+            const resultDiv = document.getElementById('holidayResult');
+            
+            if (!startDate || !endDate) {
+                showMessage(resultDiv, '请填写开始日期和结束日期', 'error');
+                return;
+            }
+            
+            if (new Date(startDate) > new Date(endDate)) {
+                showMessage(resultDiv, '开始日期不能晚于结束日期', 'error');
+                return;
+            }
+            
+            holidays.push({
+                start: startDate,
+                end: endDate
+            });
+            
+            showMessage(resultDiv, `已添加休假日期：${startDate} 至 ${endDate}`, 'success');
+            
+            // 清空输入
+            document.getElementById('holidayStart').value = '';
+            document.getElementById('holidayEnd').value = '';
+            
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                resultDiv.classList.add('hidden');
+            }, 3000);
+        }
+        
+        // 显示消息
+        function showMessage(element, message, type) {
+            element.textContent = message;
+            element.className = 'notification ' + (type === 'success' ? 'success' : 'pending');
+            element.classList.remove('hidden');
+        }
+        
+        // 获取状态文本
+        function getStatusText(status) {
+            switch(status) {
+                case 'pending': return '待处理';
+                case 'approved': return '已同意';
+                case 'rejected': return '已拒绝';
+                default: return status;
+            }
+        }
+        
+        // 格式化日期显示
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            return `${date.getFullYear()}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+        }
+    </script>
+</body>
+</html>

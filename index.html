@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>寝室倒垃圾管理系统</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .section h2 {
+            margin-top: 0;
+            color: #555;
+        }
+        .duty-info {
+            font-size: 18px;
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #e9f7ef;
+            border-left: 4px solid #27ae60;
+        }
+        .swap-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+        .swap-form select, .swap-form button {
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .swap-form button {
+            background-color: #3498db;
+            color: white;
+            cursor: pointer;
+            border: none;
+        }
+        .swap-form button:hover {
+            background-color: #2980b9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .notification {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .pending {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .hidden {
+            display: none;
+        }
+        .admin-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .admin-link a {
+            color: #3498db;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>寝室倒垃圾管理系统</h1>
+        
+        <!-- 当日和明日倒垃圾成员 -->
+        <div class="section">
+            <h2>倒垃圾安排</h2>
+            <div class="duty-info">
+                <strong>今天倒垃圾成员：</strong><span id="todayDuty">加载中...</span>
+            </div>
+            <div class="duty-info">
+                <strong>明天倒垃圾成员：</strong><span id="tomorrowDuty">加载中...</span>
+            </div>
+        </div>
+        
+        <!-- 申请交换 -->
+        <div class="section">
+            <h2>申请交换倒垃圾顺序</h2>
+            <div class="swap-form">
+                <label for="swapWith">我想和</label>
+                <select id="swapWith">
+                    <option value="">选择成员</option>
+                </select>
+                <label for="swapDate">在</label>
+                <select id="swapDate">
+                    <option value="">选择日期</option>
+                </select>
+                <button id="requestSwap">申请交换</button>
+            </div>
+            <div id="requestResult" class="notification hidden"></div>
+        </div>
+        
+        <!-- 倒垃圾次数统计 -->
+        <div class="section">
+            <h2>倒垃圾次数统计</h2>
+            <table id="statsTable">
+                <thead>
+                    <tr>
+                        <th>成员</th>
+                        <th>倒垃圾次数</th>
+                    </tr>
+                </thead>
+                <tbody id="statsBody">
+                    <!-- 数据将通过JavaScript填充 -->
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 休假设置 -->
+        <div class="section">
+            <h2>休假设置</h2>
+            <div class="duty-info">
+                <strong>当前休假日期：</strong>
+                <ul id="holidayList">
+                    <!-- 休假日期将通过JavaScript填充 -->
+                </ul>
+            </div>
+        </div>
+        
+        <div class="admin-link">
+            <a href="admin.html">管理员入口</a>
+        </div>
+    </div>
+
+    <script>
+        // 模拟数据
+        const members = ['黄鹏文', '徐鑫鹏', '王金涛', '黄孝傲', '冉墙林', '黄永鑫'];
+        const holidays = [
+            { start: '2024-01-01', end: '2024-02-01' },
+            { start: '2024-05-01', end: '2024-05-03' }
+        ];
+        const startDate = '2024-01-01';
+        
+        // 模拟交换申请
+        let swapRequests = [
+            { id: 1, from: '黄鹏文', to: '徐鑫鹏', date: '2024-05-20', status: 'pending' }
+        ];
+        
+        // 模拟倒垃圾次数统计
+        let dutyStats = {
+            '黄鹏文': 8,
+            '徐鑫鹏': 7,
+            '王金涛': 8,
+            '黄孝傲': 7,
+            '冉墙林': 8,
+            '黄永鑫': 7
+        };
+        
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            populateSwapForm();
+            updateDutyInfo();
+            updateStatsTable();
+            updateHolidayList();
+            
+            // 绑定事件
+            document.getElementById('requestSwap').addEventListener('click', requestDutySwap);
+        });
+        
+        // 填充交换表单选项
+        function populateSwapForm() {
+            const swapWithSelect = document.getElementById('swapWith');
+            const swapDateSelect = document.getElementById('swapDate');
+            
+            // 填充成员列表
+            members.forEach(member => {
+                if (document.getElementById('todayDuty').textContent.includes(member) || 
+                    document.getElementById('tomorrowDuty').textContent.includes(member)) {
+                    return; // 跳过当前值班人员
+                }
+                
+                const option = document.createElement('option');
+                option.value = member;
+                option.textContent = member;
+                swapWithSelect.appendChild(option);
+            });
+            
+            // 填充日期列表（接下来的7天）
+            for (let i = 1; i <= 7; i++) {
+                const date = new Date();
+                date.setDate(date.getDate() + i);
+                const dateString = date.toISOString().split('T')[0];
+                
+                const option = document.createElement('option');
+                option.value = dateString;
+                option.textContent = formatDate(dateString);
+                swapDateSelect.appendChild(option);
+            }
+        }
+        
+        // 更新倒垃圾信息
+        function updateDutyInfo() {
+            document.getElementById('todayDuty').textContent = getDutyMember(new Date().toISOString().split('T')[0]);
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('tomorrowDuty').textContent = getDutyMember(tomorrow.toISOString().split('T')[0]);
+        }
+        
+        // 获取指定日期的倒垃圾成员
+        function getDutyMember(date) {
+            // 检查是否为假期
+            if (isHoliday(date)) {
+                return '放假，无需倒垃圾';
+            }
+            
+            // 计算轮值成员
+            const start = new Date(startDate);
+            const end = new Date(date);
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const index = diffDays % members.length;
+            return members[index];
+        }
+        
+        // 检查是否为假期
+        function isHoliday(date) {
+            for (let i = 0; i < holidays.length; i++) {
+                const holiday = holidays[i];
+                if (date >= holiday.start && date <= holiday.end) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        // 更新统计表格
+        function updateStatsTable() {
+            const statsBody = document.getElementById('statsBody');
+            statsBody.innerHTML = '';
+            
+            members.forEach(member => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${member}</td>
+                    <td>${dutyStats[member] || 0}</td>
+                `;
+                statsBody.appendChild(row);
+            });
+        }
+        
+        // 更新假期列表
+        function updateHolidayList() {
+            const holidayList = document.getElementById('holidayList');
+            holidayList.innerHTML = '';
+            
+            holidays.forEach(holiday => {
+                const li = document.createElement('li');
+                li.textContent = `${holiday.start} 至 ${holiday.end}`;
+                holidayList.appendChild(li);
+            });
+        }
+        
+        // 申请交换倒垃圾顺序
+        function requestDutySwap() {
+            const swapWith = document.getElementById('swapWith').value;
+            const swapDate = document.getElementById('swapDate').value;
+            const resultDiv = document.getElementById('requestResult');
+            
+            if (!swapWith || !swapDate) {
+                showMessage(resultDiv, '请选择交换对象和日期', 'error');
+                return;
+            }
+            
+            // 模拟提交申请
+            const newRequest = {
+                id: swapRequests.length + 1,
+                from: getCurrentUser(), // 实际应用中应获取当前用户
+                to: swapWith,
+                date: swapDate,
+                status: 'pending'
+            };
+            
+            swapRequests.push(newRequest);
+            showMessage(resultDiv, `已向${swapWith}发送交换申请，请等待对方确认。`, 'success');
+            
+            // 清空选择
+            document.getElementById('swapWith').value = '';
+            document.getElementById('swapDate').value = '';
+        }
+        
+        // 显示消息
+        function showMessage(element, message, type) {
+            element.textContent = message;
+            element.className = 'notification ' + (type === 'success' ? 'success' : 'pending');
+            element.classList.remove('hidden');
+            
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                element.classList.add('hidden');
+            }, 3000);
+        }
+        
+        // 获取当前用户（模拟）
+        function getCurrentUser() {
+            return members[Math.floor(Math.random() * members.length)];
+        }
+        
+        // 格式化日期显示
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+            const dayOfWeek = days[date.getDay()];
+            return `${month}月${day}日 (${dayOfWeek})`;
+        }
+    </script>
+</body>
+</html>

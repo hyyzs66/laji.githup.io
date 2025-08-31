@@ -4,22 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>寝室轮流倒垃圾程序</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin-top: 50px;
-        }
-        #result, #nextDuty {
-            font-size: 24px;
-            margin-top: 20px;
-        }
-    </style>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin-top: 50px;
+    }
+    #result, #nextDuty {
+        font-size: 24px;
+        margin-top: 20px;
+    }
+    .new-system-link {
+        margin-top: 30px;
+        padding: 15px;
+        background-color: #e9f7ef;
+        border-left: 4px solid #27ae60;
+    }
+    .new-system-link a {
+        font-size: 20px;
+        color: #3498db;
+        text-decoration: none;
+        font-weight: bold;
+    }
+</style>
 </head>
 <body>
     <h1>寝室轮流倒垃圾程序</h1>
     <div id="result"></div>
     <div id="nextDuty"></div>
+
+    <div class="new-system-link">
+        <p>我们有新的宿舍垃圾管理系统了！</p>
+        <a href="index.html">点击进入新系统</a>
+    </div>
 
     <script>
         // 定义假期日期范围，例如：2024-01-01至2024-02-01
