@@ -164,7 +164,7 @@
         </div>
     </div>
 
-    <script src="data_manager.js"></script>
+    <script src="api_manager.js"></script>
     <script>
         // 全局变量
         let members = [];
@@ -187,11 +187,11 @@
         // 加载所有数据
         async function loadData() {
             try {
-                members = await DataManager.loadMembers();
-                holidays = await DataManager.loadHolidays();
-                dutyStats = await DataManager.loadDutyStats();
+                members = await ApiManager.loadMembers();
+                holidays = await ApiManager.loadHolidays();
+                dutyStats = await ApiManager.loadDutyStats();
                 
-                const config = await DataManager.loadConfig();
+                const config = await ApiManager.loadConfig();
                 if (config.start_date) {
                     startDate = config.start_date;
                 }
@@ -334,9 +334,9 @@
             }
             
             // 提交申请
-            const success = await DataManager.addSwapRequest(getCurrentUser(), swapWith, swapDate);
+            const response = await ApiManager.addSwapRequest(getCurrentUser(), swapWith, swapDate);
             
-            if (success) {
+            if (response.success) {
                 showMessage(resultDiv, `已向${swapWith}发送交换申请，请等待管理员确认。`, 'success');
                 // 清空选择
                 document.getElementById('swapWith').value = '';

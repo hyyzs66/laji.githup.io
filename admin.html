@@ -173,7 +173,7 @@
         <a href="index.html">返回用户页面</a>
     </div>
 
-    <script src="data_manager.js"></script>
+    <script src="api_manager.js"></script>
     <script>
         // 全局变量
         let members = [];
@@ -194,10 +194,10 @@
         // 加载所有数据
         async function loadData() {
             try {
-                members = await DataManager.loadMembers();
-                swapRequests = await DataManager.loadSwapRequests();
-                dutyStats = await DataManager.loadDutyStats();
-                holidays = await DataManager.loadHolidays();
+                members = await ApiManager.loadMembers();
+                swapRequests = await ApiManager.loadSwapRequests();
+                dutyStats = await ApiManager.loadDutyStats();
+                holidays = await ApiManager.loadHolidays();
             } catch (error) {
                 console.error('加载数据失败:', error);
                 // 使用默认数据
@@ -267,19 +267,19 @@
         
         // 同意交换申请
         async function approveRequest(id) {
-            const success = await DataManager.updateSwapRequestStatus(id, 'approved');
+            const response = await ApiManager.updateSwapRequestStatus(id, 'approved');
             
-            if (success) {
+            if (response.success) {
                 // 更新本地数据
                 const request = swapRequests.find(req => req.id === id);
                 if (request) {
                     request.status = 'approved';
                     
                     // 增加申请人的倒垃圾次数
-                    await DataManager.incrementDutyCount(request.from);
+                    await ApiManager.incrementDutyCount(request.from);
                     
                     // 重新加载统计数据
-                    dutyStats = await DataManager.loadDutyStats();
+                    dutyStats = await ApiManager.loadDutyStats();
                     
                     updateRequestsTable();
                     updateStatsTable();
@@ -292,9 +292,9 @@
         
         // 拒绝交换申请
         async function rejectRequest(id) {
-            const success = await DataManager.updateSwapRequestStatus(id, 'rejected');
+            const response = await ApiManager.updateSwapRequestStatus(id, 'rejected');
             
-            if (success) {
+            if (response.success) {
                 // 更新本地数据
                 const request = swapRequests.find(req => req.id === id);
                 if (request) {
@@ -323,16 +323,13 @@
                 return;
             }
             
-            // 添加到本地数据
-            holidays.push({
-                start: startDate,
-                end: endDate
-            });
+            // 添加假期
+            const response = await ApiManager.addHoliday(startDate, endDate);
             
-            // 保存到文件
-            const success = await DataManager.saveHolidays(holidays);
-            
-            if (success) {
+            if (response.success) {
+                // 更新本地数据
+                holidays = response.holidays || await ApiManager.loadHolidays();
+                
                 showMessage(resultDiv, `已添加休假日期：${startDate} 至 ${endDate}`, 'success');
                 
                 // 清空输入
