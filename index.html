@@ -164,32 +164,17 @@
         </div>
     </div>
 
+    <script src="data_manager.js"></script>
     <script>
-        // 模拟数据
-        const members = ['黄鹏文', '徐鑫鹏', '王金涛', '黄孝傲', '冉墙林', '黄永鑫'];
-        const holidays = [
-            { start: '2024-01-01', end: '2024-02-01' },
-            { start: '2024-05-01', end: '2024-05-03' }
-        ];
-        const startDate = '2024-01-01';
-        
-        // 模拟交换申请
-        let swapRequests = [
-            { id: 1, from: '黄鹏文', to: '徐鑫鹏', date: '2024-05-20', status: 'pending' }
-        ];
-        
-        // 模拟倒垃圾次数统计
-        let dutyStats = {
-            '黄鹏文': 8,
-            '徐鑫鹏': 7,
-            '王金涛': 8,
-            '黄孝傲': 7,
-            '冉墙林': 8,
-            '黄永鑫': 7
-        };
+        // 全局变量
+        let members = [];
+        let holidays = [];
+        let dutyStats = {};
+        let startDate = '2024-01-01';
         
         // 初始化页面
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadData();
             populateSwapForm();
             updateDutyInfo();
             updateStatsTable();
@@ -199,16 +184,53 @@
             document.getElementById('requestSwap').addEventListener('click', requestDutySwap);
         });
         
+        // 加载所有数据
+        async function loadData() {
+            try {
+                members = await DataManager.loadMembers();
+                holidays = await DataManager.loadHolidays();
+                dutyStats = await DataManager.loadDutyStats();
+                
+                const config = await DataManager.loadConfig();
+                if (config.start_date) {
+                    startDate = config.start_date;
+                }
+            } catch (error) {
+                console.error('加载数据失败:', error);
+                // 使用默认数据
+                members = ['黄鹏文', '徐鑫鹏', '王金涛', '黄孝傲', '冉墙林', '黄永鑫'];
+                holidays = [
+                    { start: '2024-01-01', end: '2024-02-01' },
+                    { start: '2024-05-01', end: '2024-05-03' }
+                ];
+                dutyStats = {
+                    '黄鹏文': 8,
+                    '徐鑫鹏': 7,
+                    '王金涛': 8,
+                    '黄孝傲': 7,
+                    '冉墙林': 8,
+                    '黄永鑫': 7
+                };
+            }
+        }
+        
         // 填充交换表单选项
         function populateSwapForm() {
             const swapWithSelect = document.getElementById('swapWith');
             const swapDateSelect = document.getElementById('swapDate');
             
+            // 清空现有选项
+            swapWithSelect.innerHTML = '<option value="">选择成员</option>';
+            swapDateSelect.innerHTML = '<option value="">选择日期</option>';
+            
             // 填充成员列表
             members.forEach(member => {
-                if (document.getElementById('todayDuty').textContent.includes(member) || 
+                // 跳过当前值班人员
+                if (document.getElementById('todayDuty') && 
+                    document.getElementById('todayDuty').textContent.includes(member) || 
+                    document.getElementById('tomorrowDuty') && 
                     document.getElementById('tomorrowDuty').textContent.includes(member)) {
-                    return; // 跳过当前值班人员
+                    return;
                 }
                 
                 const option = document.createElement('option');
@@ -232,10 +254,14 @@
         
         // 更新倒垃圾信息
         function updateDutyInfo() {
-            document.getElementById('todayDuty').textContent = getDutyMember(new Date().toISOString().split('T')[0]);
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            document.getElementById('tomorrowDuty').textContent = getDutyMember(tomorrow.toISOString().split('T')[0]);
+            if (document.getElementById('todayDuty')) {
+                document.getElementById('todayDuty').textContent = getDutyMember(new Date().toISOString().split('T')[0]);
+            }
+            if (document.getElementById('tomorrowDuty')) {
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                document.getElementById('tomorrowDuty').textContent = getDutyMember(tomorrow.toISOString().split('T')[0]);
+            }
         }
         
         // 获取指定日期的倒垃圾成员
@@ -268,6 +294,8 @@
         // 更新统计表格
         function updateStatsTable() {
             const statsBody = document.getElementById('statsBody');
+            if (!statsBody) return;
+            
             statsBody.innerHTML = '';
             
             members.forEach(member => {
@@ -283,6 +311,8 @@
         // 更新假期列表
         function updateHolidayList() {
             const holidayList = document.getElementById('holidayList');
+            if (!holidayList) return;
+            
             holidayList.innerHTML = '';
             
             holidays.forEach(holiday => {
@@ -293,7 +323,7 @@
         }
         
         // 申请交换倒垃圾顺序
-        function requestDutySwap() {
+        async function requestDutySwap() {
             const swapWith = document.getElementById('swapWith').value;
             const swapDate = document.getElementById('swapDate').value;
             const resultDiv = document.getElementById('requestResult');
@@ -303,21 +333,17 @@
                 return;
             }
             
-            // 模拟提交申请
-            const newRequest = {
-                id: swapRequests.length + 1,
-                from: getCurrentUser(), // 实际应用中应获取当前用户
-                to: swapWith,
-                date: swapDate,
-                status: 'pending'
-            };
+            // 提交申请
+            const success = await DataManager.addSwapRequest(getCurrentUser(), swapWith, swapDate);
             
-            swapRequests.push(newRequest);
-            showMessage(resultDiv, `已向${swapWith}发送交换申请，请等待对方确认。`, 'success');
-            
-            // 清空选择
-            document.getElementById('swapWith').value = '';
-            document.getElementById('swapDate').value = '';
+            if (success) {
+                showMessage(resultDiv, `已向${swapWith}发送交换申请，请等待管理员确认。`, 'success');
+                // 清空选择
+                document.getElementById('swapWith').value = '';
+                document.getElementById('swapDate').value = '';
+            } else {
+                showMessage(resultDiv, '申请提交失败，请稍后重试', 'error');
+            }
         }
         
         // 显示消息

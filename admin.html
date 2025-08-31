@@ -173,34 +173,17 @@
         <a href="index.html">返回用户页面</a>
     </div>
 
+    <script src="data_manager.js"></script>
     <script>
-        // 模拟数据
-        const members = ['黄鹏文', '徐鑫鹏', '王金涛', '黄孝傲', '冉墙林', '黄永鑫'];
-        
-        // 模拟交换申请
-        let swapRequests = [
-            { id: 1, from: '黄鹏文', to: '徐鑫鹏', date: '2024-05-20', status: 'pending' },
-            { id: 2, from: '王金涛', to: '黄孝傲', date: '2024-05-22', status: 'pending' }
-        ];
-        
-        // 模拟倒垃圾次数统计
-        let dutyStats = {
-            '黄鹏文': 8,
-            '徐鑫鹏': 7,
-            '王金涛': 8,
-            '黄孝傲': 7,
-            '冉墙林': 8,
-            '黄永鑫': 7
-        };
-        
-        // 模拟假期
-        let holidays = [
-            { start: '2024-01-01', end: '2024-02-01' },
-            { start: '2024-05-01', end: '2024-05-03' }
-        ];
+        // 全局变量
+        let members = [];
+        let swapRequests = [];
+        let dutyStats = [];
+        let holidays = [];
         
         // 初始化页面
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadData();
             updateRequestsTable();
             updateStatsTable();
             
@@ -208,9 +191,41 @@
             document.getElementById('addHoliday').addEventListener('click', addHoliday);
         });
         
+        // 加载所有数据
+        async function loadData() {
+            try {
+                members = await DataManager.loadMembers();
+                swapRequests = await DataManager.loadSwapRequests();
+                dutyStats = await DataManager.loadDutyStats();
+                holidays = await DataManager.loadHolidays();
+            } catch (error) {
+                console.error('加载数据失败:', error);
+                // 使用默认数据
+                members = ['黄鹏文', '徐鑫鹏', '王金涛', '黄孝傲', '冉墙林', '黄永鑫'];
+                swapRequests = [
+                    { id: 1, from: '黄鹏文', to: '徐鑫鹏', date: '2024-05-20', status: 'pending' },
+                    { id: 2, from: '王金涛', to: '黄孝傲', date: '2024-05-22', status: 'pending' }
+                ];
+                dutyStats = {
+                    '黄鹏文': 8,
+                    '徐鑫鹏': 7,
+                    '王金涛': 8,
+                    '黄孝傲': 7,
+                    '冉墙林': 8,
+                    '黄永鑫': 7
+                };
+                holidays = [
+                    { start: '2024-01-01', end: '2024-02-01' },
+                    { start: '2024-05-01', end: '2024-05-03' }
+                ];
+            }
+        }
+        
         // 更新申请表格
         function updateRequestsTable() {
             const requestsBody = document.getElementById('requestsBody');
+            if (!requestsBody) return;
+            
             requestsBody.innerHTML = '';
             
             swapRequests.forEach(request => {
@@ -236,6 +251,8 @@
         // 更新统计表格
         function updateStatsTable() {
             const statsBody = document.getElementById('statsBody');
+            if (!statsBody) return;
+            
             statsBody.innerHTML = '';
             
             members.forEach(member => {
@@ -249,36 +266,49 @@
         }
         
         // 同意交换申请
-        function approveRequest(id) {
-            const request = swapRequests.find(req => req.id === id);
-            if (request) {
-                request.status = 'approved';
-                
-                // 更新统计信息
-                if (dutyStats[request.from] !== undefined) {
-                    dutyStats[request.from]++;
-                } else {
-                    dutyStats[request.from] = 1;
+        async function approveRequest(id) {
+            const success = await DataManager.updateSwapRequestStatus(id, 'approved');
+            
+            if (success) {
+                // 更新本地数据
+                const request = swapRequests.find(req => req.id === id);
+                if (request) {
+                    request.status = 'approved';
+                    
+                    // 增加申请人的倒垃圾次数
+                    await DataManager.incrementDutyCount(request.from);
+                    
+                    // 重新加载统计数据
+                    dutyStats = await DataManager.loadDutyStats();
+                    
+                    updateRequestsTable();
+                    updateStatsTable();
+                    alert(`已同意${request.from}和${request.to}在${formatDate(request.date)}的交换申请`);
                 }
-                
-                updateRequestsTable();
-                updateStatsTable();
-                alert(`已同意${request.from}和${request.to}在${formatDate(request.date)}的交换申请`);
+            } else {
+                alert('操作失败，请稍后重试');
             }
         }
         
         // 拒绝交换申请
-        function rejectRequest(id) {
-            const request = swapRequests.find(req => req.id === id);
-            if (request) {
-                request.status = 'rejected';
-                updateRequestsTable();
-                alert(`已拒绝${request.from}和${request.to}在${formatDate(request.date)}的交换申请`);
+        async function rejectRequest(id) {
+            const success = await DataManager.updateSwapRequestStatus(id, 'rejected');
+            
+            if (success) {
+                // 更新本地数据
+                const request = swapRequests.find(req => req.id === id);
+                if (request) {
+                    request.status = 'rejected';
+                    updateRequestsTable();
+                    alert(`已拒绝${request.from}和${request.to}在${formatDate(request.date)}的交换申请`);
+                }
+            } else {
+                alert('操作失败，请稍后重试');
             }
         }
         
         // 添加休假日期
-        function addHoliday() {
+        async function addHoliday() {
             const startDate = document.getElementById('holidayStart').value;
             const endDate = document.getElementById('holidayEnd').value;
             const resultDiv = document.getElementById('holidayResult');
@@ -293,21 +323,29 @@
                 return;
             }
             
+            // 添加到本地数据
             holidays.push({
                 start: startDate,
                 end: endDate
             });
             
-            showMessage(resultDiv, `已添加休假日期：${startDate} 至 ${endDate}`, 'success');
+            // 保存到文件
+            const success = await DataManager.saveHolidays(holidays);
             
-            // 清空输入
-            document.getElementById('holidayStart').value = '';
-            document.getElementById('holidayEnd').value = '';
-            
-            // 3秒后自动隐藏
-            setTimeout(() => {
-                resultDiv.classList.add('hidden');
-            }, 3000);
+            if (success) {
+                showMessage(resultDiv, `已添加休假日期：${startDate} 至 ${endDate}`, 'success');
+                
+                // 清空输入
+                document.getElementById('holidayStart').value = '';
+                document.getElementById('holidayEnd').value = '';
+                
+                // 3秒后自动隐藏
+                setTimeout(() => {
+                    resultDiv.classList.add('hidden');
+                }, 3000);
+            } else {
+                showMessage(resultDiv, '保存失败，请稍后重试', 'error');
+            }
         }
         
         // 显示消息
